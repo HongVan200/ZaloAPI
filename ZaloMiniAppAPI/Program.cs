@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ZaloMiniAppAPI;
 using Microsoft.Extensions.Hosting;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -21,12 +22,12 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.Wi
 builder.Services.AddDbContext<ProductStore>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ProductStore") + ";TrustServerCertificate=true"));
 
-builder.Services.AddIdentityCore<AccoutDetail>(options =>
+/*builder.Services.AddIdentityCore<AccoutDetail>(options =>
 {
     // Cấu hình các tùy chọn của Identity tại đây (nếu cần)
 })
     .AddUserStore<UserStore<AccoutDetail, IdentityRole, ProductStore, string>>()
-    .AddDefaultTokenProviders();
+    .AddDefaultTokenProviders();*/
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 

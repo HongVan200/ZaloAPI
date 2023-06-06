@@ -42,7 +42,7 @@ namespace ZaloMiniAppAPI.Controllers
 
 
             // Kiểm tra xem tài khoản đã tồn tại trong cơ sở dữ liệu hay chưa
-            var existingAccount = await _context.AccoutDetail.FirstOrDefaultAsync(a => a.Sdt == acoutDetail.Sdt);
+            var existingAccount = await _context.AccoutDetail.FirstOrDefaultAsync(a => a.UserID == acoutDetail.UserID);
             if (existingAccount != null)
             {
                 return BadRequest("Tài khoản đã tồn tại");
@@ -51,13 +51,7 @@ namespace ZaloMiniAppAPI.Controllers
                 // Thêm logic xác nhận Admin tại đây
                 acoutDetail.IsAdminApproved = true;
             
-            // Mã hóa mật khẩu
-            string hashedPassword = HashPassword(acoutDetail.Password);
-
-            // Cập nhật mật khẩu đã được mã hóa
-            acoutDetail.Password = hashedPassword;
-
-            // Thêm tài khoản mới vào cơ sở dữ liệu
+          
             _context.AccoutDetail.Add(acoutDetail);
             await _context.SaveChangesAsync();
 

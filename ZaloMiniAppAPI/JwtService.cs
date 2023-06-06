@@ -63,32 +63,48 @@ namespace ZaloMiniAppAPI
                 ClockSkew = TimeSpan.Zero
             };
 
-            try
+          
+                // Validate the token and retrieve the claims
+                SecurityToken validatedToken;
+                var claimsPrincipal = tokenHandler.ValidateToken(token, validationParameters, out validatedToken);
+
+                return true;
+            
+            
+        }
+        public bool IsAdmin(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+
+            var validationParameters = new TokenValidationParameters
             {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = _jwtSettings.Issuer,
+                ValidAudience = _jwtSettings.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+
+           
                 // Validate the token and retrieve the claims
                 SecurityToken validatedToken;
                 var claimsPrincipal = tokenHandler.ValidateToken(token, validationParameters, out validatedToken);
 
                 // Retrieve the value of the "isAdmin" claim
                 var isAdminClaim = claimsPrincipal.Claims.FirstOrDefault(c => c.Type == "isAdmin");
+
                 if (isAdminClaim != null && bool.TryParse(isAdminClaim.Value, out bool isAdmin))
                 {
-                    // Perform any necessary actions for admin users
-                    if (isAdmin)
-                    {
-                        return true;
-                    }
+                    return isAdmin;
                 }
-            }
-            catch (Exception)
-            {
-                // Token validation failed
-                return false;
-            }
+           
 
-            // The user is not an admin or the isAdmin claim is not present
-            // Add your logic here for non-admin users
             return false;
         }
     }
+    
 }

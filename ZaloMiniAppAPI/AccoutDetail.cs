@@ -3,13 +3,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ZaloMiniAppAPI
 {
-    public class AccoutDetail:IdentityUser<string>
+    public class AccoutDetail
     {
         [Key]
         public int CustomerId { get; set; }
-
-        public string? Sdt { get; set; }
-        public string? Password { get; set; }
+        public long UserID { get; set; }
+        public string? Username { get; set; }
         public bool IsAdminApproved { get; set; }
         public string? RoleId { get; set; }
     }

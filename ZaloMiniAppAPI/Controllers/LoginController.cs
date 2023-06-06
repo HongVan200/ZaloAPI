@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ZaloDotNetSDK.entities.shop;
 using ZaloMiniAppAPI;
 
 namespace ZaloMiniAppAPI.Controllers
@@ -18,55 +19,50 @@ namespace ZaloMiniAppAPI.Controllers
     public class LoginController : ControllerBase
     {
         private readonly ProductStore _context;
-        private readonly UserManager<AccoutDetail> _userManager;
         private readonly IJwtService _jwtService;
-        public LoginController(ProductStore context, UserManager<AccoutDetail> userManager, IJwtService jwtService)
+        public LoginController(ProductStore context, IJwtService jwtService)
         {
             _context = context;
-            _userManager = userManager;
+           
             _jwtService = jwtService;
         }
 
-
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<AccoutDetail>>> GetAllAccounts()
+        {
+            var accounts = await _context.AccoutDetail.ToListAsync();
+            return Ok(accounts);
+        }
         [HttpPost]
-        public async Task<IActionResult> Login(LoginDto loginDto)
+        public async Task<IActionResult> Login(AccoutDetail accoutDetail)
         {
-            // Truy vấn cơ sở dữ liệu để tìm tài khoản có số điện thoại đăng nhập tương ứng
-            var user = await _context.Set<AccoutDetail>()
-                            .SingleOrDefaultAsync(u => u.Sdt == loginDto.Username);
+            var existingUser = await _context.AccoutDetail.FirstOrDefaultAsync(u => u.UserID == accoutDetail.UserID);
 
-
-            if (user == null)
+            if (existingUser == null)
             {
-                // Số điện thoại không tồn tại trong cơ sở dữ liệu
-                return BadRequest("Số điện thoại không tồn tại.");
+                // Thêm tài khoản mới nếu UserID chưa tồn tại trong cơ sở dữ liệu
+                var user = new AccoutDetail
+                {
+                    UserID = accoutDetail.UserID,
+                    Username = accoutDetail.Username,
+                    IsAdminApproved =false,
+                    RoleId = "User"
+                };
+
+                _context.AccoutDetail.Add(user);
+                await _context.SaveChangesAsync();
+
+                // Tạo mã token với CustomerId vừa tạo
+                var newToken = _jwtService.GenerateJwtToken(user.CustomerId, user.IsAdminApproved);
+                return Ok(new { token = newToken });
             }
-
-            // Kiểm tra tính chính xác của mật khẩu
-            bool isPasswordCorrect = VerifyPassword(loginDto.Password, user.Password);
-
-            if (!isPasswordCorrect)
+            else
             {
-                // Mật khẩu không chính xác
-                return BadRequest("Mật khẩu không chính xác.");
+                // Đăng nhập và trả về mã token nếu UserID đã tồn tại trong cơ sở dữ liệu
+                var token = _jwtService.GenerateJwtToken(existingUser.CustomerId, existingUser.IsAdminApproved);
+                return Ok(new { token });
             }
-
-            var token = _jwtService.GenerateJwtToken(user.CustomerId, user.IsAdminApproved);
-
-            return Ok(new { token });
         }
 
-        private bool VerifyPassword(string password, string hashedPassword)
-        {
-            using (var sha256 = SHA256.Create())
-            {
-                // Mã hóa mật khẩu nhập vào
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                var hashedInput = BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
-
-                // So sánh mật khẩu đã mã hóa với mật khẩu đã lưu trong cơ sở dữ liệu
-                return hashedInput == hashedPassword;
-            }
-        }
     }
 }
